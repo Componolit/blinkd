@@ -2,7 +2,7 @@
 import logging
 from time import sleep
 import threading
-from blink1.blink1 import Blink1
+from blink1.blink1 import Blink1, REPORT_ID
 from usb.core import USBError
 
 logger = logging.getLogger(__name__)
@@ -20,9 +20,6 @@ class Notifier:
 
     def __init__(self):
         self.led = [0, self.STATUS_OK, self.STATUS_OK]
-        self.led_changed = [None, threading.Event(), threading.Event()]
-        self.led_changed[1].set()
-        self.led_changed[2].set()
         try:
             blink = Blink1()
             led1 = threading.Thread(target=self.run_led, args=(blink, 1), daemon=True)
@@ -39,23 +36,19 @@ class Notifier:
         if led == 0:
             self.set_status(1, status)
             self.set_status(2, status)
-            return
-        if self.led[led] != status:
-            self.led[led] = status
-            self.led_changed[led].set()
 
     def run_led(self, blink, led):
         while True:
-            self.led_changed[led].clear()
             if self.led[led] == self.STATUS_OK:
                 blink.fade_to_rgb_uncorrected(0, 0, 0, 0, led)
-                self.led_changed[led].wait()
+                blink.write([REPORT_ID, ord('D'), 1, 200 >> 8, 200 & 0xff, 0, 0, 0])
+                sleep(0.5)
             elif self.led[led] == self.STATUS_WARN:
                 blink.fade_to_rgb_uncorrected(0, 255, 255, 0, led)
-                self.led_changed[led].wait()
+                sleep(0.5)
             elif self.led[led] == self.STATUS_ERROR:
                 blink.fade_to_rgb_uncorrected(0, 255, 0, 0, led)
-                self.led_changed[led].wait()
+                sleep(0.5)
             elif self.led[led] == self.STATUS_FATAL:
                 while not self.led_changed[led].is_set():
                     blink.fade_to_rgb_uncorrected(0, 255, 0, 0, led)
