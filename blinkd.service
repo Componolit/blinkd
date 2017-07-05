@@ -1,0 +1,10 @@
+[Unit]
+Description=Socket based service to control a ThingM Blink(1) mk2 device
+
+[Service]
+Type=Simple
+ExecStart=/opt/blinkd/blinkd.py
+PIDFile=/tmp/blinkd.pid
+
+[Install]
+WantedBy=multi-user.target
